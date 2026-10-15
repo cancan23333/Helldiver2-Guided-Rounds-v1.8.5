@@ -1,220 +1,387 @@
-# Guided Rounds v1.8.5
+# Guided Rounds v1.8.5 — 制导弹丸 / Guided projectiles for every weapon
 
-作者：cancan2333 & SoS2430
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Mod page](https://img.shields.io/badge/AyakaMods-mod%20page-blue)](https://ayakamods.com/mods/guided-rounds-%E5%AD%90%E5%BC%B9%E8%BF%BD%E8%B8%AA%E4%B8%8E%E8%87%AA%E7%9E%84%E6%89%A9%E5%B1%95.5059/)
 
-把 **P-92 法令手枪**的原版制导机制移植到武器清单里的每一把枪上。弹丸出膛后自动追踪敌人，
-**伤害、初速、弹道仍然使用武器自己的数值**，不会变成法令手枪的 90 伤害。
+A Helldivers 2 addon for Bingus Shared Loader: the P-92 Warrant's own guidance, ported to every weapon on the list.
+Rounds track the enemy after they leave the barrel, while **damage, muzzle velocity and ballistics stay the weapon's own**.
 
-> **v1.8.1**：**代码健壮性与可读性优化**——玩法、参数默认值、菜单项、内存偏移和日志格式
-> 都与 v1.8.0 一致，另外修掉四处会报错的隐患（F10 换追踪弹时调用到 nil、`debug=1` 时
-> 读不到实体就报错、准心轴比较 nil 值，以及 `ptr_ok` 的声明顺序导致加载失败）。
-> **v1.8.2**：修掉**锁定目标方框在切换武器后残留**的渲染问题（见下表第 25 条）。
-> **v1.8.5**：选项文字**跟随游戏语言**（简繁中文显示中文，其余语言显示英文，切换语言无需重启）。
-> **v1.8.3 / v1.8.4**：**开镜与腰射的锁定范围不再"打架"**，并给出两种可选模型（见下表第 27–28 条）：
-> - **默认（开关关）**：锁定锥按相机 FOV 补偿，范围圆环在**任何倍率下都是同样的屏幕大小**，
->   腰射和开镜"屏幕上能锁的范围"完全一致——圆环画多大就锁多大。
-> - **开关开**：开镜时锁定范围 = **原版范围 × 一个系数**（MODS 页可调，默认 0.3）。
->   因为原版范围本身随倍镜等比放大，所以这一档**自动跟随倍镜放大系数**：同一系数下
->   8 倍镜锁的范围约是 1 倍镜的 6 倍，而不是之前那种"1 倍镜和 8 倍镜缩放一样"。填 1.0 就是完全原版行为。
-> 完整改动清单与验证方法见 [`OPTIMIZATION.md`](OPTIMIZATION.md)。
+**中文** | [English](#english)
 
-## 语言
+> ### ★ NEW IN v1.8.5 — FULL ENGLISH SUPPORT ★
+> Every in-game option now follows your game language: Simplified or Traditional Chinese shows Chinese, **every other
+> language shows English**. English-speaking players get a fully English menu for the first time (earlier versions were
+> Chinese-only). Nothing to configure — change Text Language in the game's options and open the escape menu again.
 
-MODS 页里的选项文字**跟随游戏语言自动切换**：客户端语言是**简体或繁体中文**时显示中文，
-其它任何语言显示英文（读不到语言时也显示英文，与 Mod Options Menu 自身的行为一致）。
+---
 
-实现方式用的是 Mod Options Menu 自己的机制：v1.1+（API 2）允许把 `label` / `description` /
-每个 `choice` 写成**函数**，菜单每次打开逃生菜单时都会重新调用它们——而它刚好在调用之前
-把游戏语言写进共享的 `BingusTranslations` 注册表，所以**在游戏里换 Text Language 之后
-不用重启就跟着变**。两个分类名（`GUIDED ROUNDS` / `GUIDED WEAPONS n`）本来就是英文，
-保持原样。菜单是 v1.0（只接受字符串）时，语言在注册那一刻定一次。
+## 目录（中文）
 
-## 依赖
+- [简介](#简介)
+- [来源声明（基于他人作品二次修改）](#来源声明基于他人作品二次修改)
+- [依赖](#依赖)
+- [安装](#安装)
+- [使用方法](#使用方法)
+- [亮点](#亮点)
+- [已知问题](#已知问题)
+- [多人游戏建议](#多人游戏建议)
+- [源码与构建](#源码与构建)
+- [开源许可](#开源许可)
+- [致谢](#致谢)
 
-| 组件 | 版本 |
-| --- | --- |
-| Bingus Shared Loader | v15+ / API 1 |
-| HD2Runtime | 0.25.0+ |
+### 简介
 
-两个都不需要手动排序，本 mod 会在启动时自行 require。
+把 **P-92 法令手枪**的原版制导机制移植到武器清单里的每一把枪上。弹丸出膛后自动追踪敌人，而
+**伤害、初速、弹道仍然使用武器自己的数值**（不会统一变成法令手枪的 90 伤害）。带索敌范围圆环、锁定标记与
+目标方框，全部参数可在游戏内 **MODS** 页签实时调整。
 
-## 安装
+### 来源声明（基于他人作品二次修改）
 
-1. 用管理器导入 `Guided-Rounds-v1.8.5.zip`
-2. 启用后 purge & redeploy
-3. 重启游戏
+本 mod 是 [DIY your weapon to shoot like Donk（APW-1 反器材锁头 DIY-able）](https://ayakamods.com/mods/diy-your-weapon-to-shoot-like-donk-apw-1-%E5%8F%8D%E5%99%A8%E6%9D%90%E9%94%81%E5%A4%B4mod-diy-able.4226/)
+的**二次修改产物**：制导机制、内存偏移与大部分实现都来自那个 addon，本仓库是在它基础上的独立开发与修复。
+如果你更偏好原作的做法，请直接使用原作；两个包修改同一批武器字段，**不要同时启用**。
 
-本包与 v1.8.0 **GUID 相同**，管理器会把它当作同一次升级直接替换旧版，不会出现两个并存。
+### 依赖
 
-**注意**：如果你之前装过原版 `APW-1 制导弹`，请先卸载它。两者会修改同一批武器字段，
-同时启用会互相冲突（本 mod 内置了重复加载保护，只会有一个生效，但结果取决于加载顺序）。
+必需：
 
-## 游戏内设置
+- [Bingus Shared Loader](https://ayakamods.com/mods/bingus-shared-loader.3861/) —— v18+ / API 1
+- [HD2Runtime](https://ayakamods.com/mods/hd2runtime.4260/) —— v0.40.0+
 
-逃生菜单的 **MODS** 页签里有这些分类：
+强烈推荐：
 
-- **GUIDED ROUNDS** —— 总开关与全部参数（**正好 32 项**，页面上限）
-- **GUIDED WEAPONS 1..4** —— 每把武器一个四选一（**104 把**枪/支援武器）
+- [WeakPoint Lock-On v2](https://ayakamods.com/mods/weakpoint-lock-on-v2.3981/) —— v3.0
+- [Vanilla Plus Megapack](https://ayakamods.com/mods/vanilla-plus-megapack.3913/) —— 提供游戏内 MODS 页签；不装只能用 cfg 改参数
 
-**菜单里不再列出**近战武器、手雷/投掷物，以及根本不是玩家武器的行（开发者物理枪、生化人的手榴弹等）。
-原因很实在：MODS 页**每个分类最多 32 行**、**整个页签最多 8 个分类**，而分类数是按行数算出来的
-（`ceil(总行数/32)`）。这 37 行占满了我们第 6 个分类，把**别的 mod 的分类按钮挤掉了**。
-它们**照旧可以制导**——把哈希写进 cfg 的 `weapons=` 行即可（和菜单开关写的是同一行），
-清单里已经有的一把也不会因此被关掉。
+缺少 HD2Runtime 时弹丸材质不会加载，弹丸会显示成缺材质的问号图标。
 
-五个**开发者/排查用**的开关只写在 cfg 里，不占菜单行：
-`ship_scan`（在飞船上也搜索数据表）、`debug`（详细日志）、`los_debug`（记录视线检测日志）、
-`los_desc`（视线检测用哪个碰撞配置，原本是菜单行）与 `scan_ms`（每帧数据表扫描预算，原本也是菜单行）。
-后两项是为了给 v1.8.3 的两个开镜选项腾出菜单行（GUIDED ROUNDS 页正好 32 行是硬上限）。
-需要时直接改 `%LOCALAPPDATA%/Hd2ApwGuidance/apw_guidance.cfg`（正斜杠，游戏日志里也写着完整路径）。
+### 安装
 
-⚠️ **「加载弹丸材质 / LOAD PROJECTILE MATERIALS」必须打开**（默认开，在第一页）。
-它负责让游戏把弹丸用的材质包加载进来；关掉的话弹丸会显示成**缺失材质的问号图标**
-（发射集束模式时就是一串问号）。
+1. 用管理器导入 `Guided-Rounds-v1.8.5.zip`（或在本仓库运行 `python build.py` 自行构建）
+2. 启用本 mod 与上面的依赖
+3. purge & redeploy
+4. 重启游戏
 
-### 常用参数
+⚠️ 如果你装过原作「DIY-able / APW-1 反器材锁头」，请先卸载：两者修改同一批武器字段，同时启用会互相冲突。
+
+### 使用方法
+
+逃生菜单的 **MODS** 页签里有两个分类：
+
+- **GUIDED ROUNDS** —— 总开关与全部参数（正好 32 项）
+- **GUIDED WEAPONS 1..4** —— **104** 把枪/支援武器，每把一个四选一：
+  - **OFF**：打普通弹
+  - **准心优先**：打制导弹，锁离准心最近的敌人
+  - **最大血量大优先**：制导，锁最大血量最大的
+  - **最大血量小优先**：制导，锁最大血量最小的
+
+  两个血量档都按**最大**血量排序（不会因为目标受伤而中途改选），同一档内仍由准心决定。
+
+**常用参数**
 
 | 参数 | 说明 |
 | --- | --- |
-| 开启 / ENABLE | 总开关。关闭会把所有改过的内存按字节还原 |
-| 锁定角度 | 索敌锥半角。**同时决定屏幕上范围圆环的大小**，设 0 就没有圆环 |
-| 最大距离 | 索敌距离上限（米） |
-| 绑定延迟 | 等引擎自己锁多久才由 mod 兜底绑定 |
-| 制导弹速度 / 加速度 | 直接写 P-92 制导组件的速度与加速度 |
+| 开启 | 总开关。关闭会把所有改过的内存按字节还原 |
+| 锁定角度 | 索敌锥半角，**同时决定屏幕上范围圆环的大小**；设 0 就没有圆环 |
+| 锁定距离 | 索敌距离上限（米），出厂 250 |
+| 制导弹速度 / 加速度 | 直接写追踪组件的速度与加速度。原厂只有 90 m/s，所以制导弹看起来慢；建议先试 600–900 |
+| 出膛锁定生效时间 | 弹丸出膛后多久才允许被指定目标，出厂 0.25 秒 |
 | 自己绑定目标 | 引擎没锁上时由 mod 在瞄准锥里挑一个绑上去，**建议保持开启** |
-| 潜兵锁定 | 只锁友方潜兵、不锁敌人（⚠️ 会真的打队友） |
-| 范围圆环 | 屏幕中央那圈细线，显示索敌范围 |
-| 锁定标记 | 目标身上的原版法令标记，锁定完成时旋转收拢 |
-| 目标方框 | 目标外面的线框（唯一画在世界空间的元素） |
-| 掩体后不锁 | **默认开启**。你和目标之间有实体挡住时不锁定——用的是引擎自己的碰撞射线，**从手上的枪口发出**，所以判的就是子弹这条路（子弹打不到的就不会锁） |
-| 视线检测配置 | 视线检测用引擎 35 个碰撞配置里的哪一个（0–34）。默认 0 已能识别地面和实体掩体；只有漏判时才往上调 |
-| 记录视线检测日志 | **cfg 里设 `los_debug=1`**（默认 0，不在菜单上）。每两秒往日志写一段检测结果，并**逐条列出三条射线的全部命中**（距离 / flags / 材质 / 单位），用来判断"哪条命中被当成植物跳过了"、"相机射线和枪口射线差在哪" |
-| 每把枪的模式 | **GUIDED WEAPONS** 分页里每把枪一个**四选一**：**OFF** 打普通弹 / **准心优先** 打制导弹、锁离准心最近的 / **最大血量大优先** / **最大血量小优先**。后三项都是「制导开」，区别只在索敌顺序；两个血量档都按**最大**血量排（不会因为目标受伤而中途改选），同一档内仍由准心决定 |
-| 忽略植物遮挡 | **默认开启**。树叶挡视线但挡不住子弹——引擎在命中记录里标出了这类命中，这一项跳过它们 |
+| 掩体后不锁 | 默认开。用引擎自己的碰撞射线判遮挡，而且**从手上的枪口发出**——判的就是子弹这条路 |
+| 忽略植物遮挡 | 默认开。树叶挡视线但挡不住子弹，跳过引擎标记的这类命中 |
+| 范围圆环 / 锁定标记 / 目标方框 | 三个锁定视觉元素，各自独立开关 |
+| 加载弹丸材质 | **必须保持开启**。关掉后弹丸会显示成缺失材质的问号图标 |
+| 开镜锁定系数 / 开镜锁定范围跟随倍镜 | 默认关。关闭时圆环在任何倍率下都是同样的屏幕大小，腰射与开镜能锁的范围完全一致；打开后开镜锁定范围 = 原版范围 × 系数，随倍镜放大系数自适应 |
 
-### 锁定 UI 什么时候出现
-
-**只在手上拿着的东西出现在制导清单里的时候。** 判据是**清单本身**，不是武器类别：
-
-- 拿着**清单里有的东西**（枪、支援武器，或你自己写进 cfg `weapons=` 行的任何武器）→ 照画
-- 拿着**设为 OFF 的枪**，或**清单里根本没有的实体**（没开制导的投掷物 / 近战武器、战略配备球等）→ 锁定框、范围环、锁定标记**全部收掉**
-- 把制导弹**背在背上**、手上换别的 → 同样收掉（以前会一直画着）
-
-画面之外的行为不变：索敌、绑定、伤害都和以前一样，只是不再画一个"锁上了也打不出去"的框。
-
-### 快捷键
+**快捷键**
 
 | 键 | 作用 |
 | --- | --- |
-| **F7** | **重启 mod**：把写过的值全部还原、然后重新武装。用于清掉偶发的「锁不上」状态——等同于在 MODS 页里关一下再打开。**它不再关闭 mod** |
-| F10 | 循环切换追踪弹类型（需在 cfg 里把 `seek_cycle` 设为 1） |
+| **F7** | 重启本 mod：把所有写过的值还原后重新武装。它**不会关闭** mod，用于清掉偶发「锁不上」的状态 |
+| **F10** | 循环切换追踪弹类型（需要先在 cfg 里把 `seek_cycle` 设为 1） |
 
-要**关闭** mod 请用 MODS 页的总开关，或把 cfg 里的 `enable` 改成 0。
-
-F7 走的是 addon 自带的两帧释放/重取路径（第一帧释放全部租约，第二帧重新武装）。
-选择这条路是因为「同一帧内既释放又重取」在早期版本里崩溃过实体的实时轮换。
-
-## 相对原版实现的修复
-
-本包源自社区原有的 APW-1 制导弹 addon，在其基础上做了以下修复与新增：
-
-| # | 内容 | 原因 |
-| --- | --- | --- |
-| 1 | 补充 6 个光能族单位到索敌白名单（悲怜体 / 粉碎者 / 凝视者 / 光能族电塔 / 认知干扰器电源） | 原版白名单基于旧版本导出，新单位不在表里，**连候选都进不了** |
-| 2 | 新增「只锁友军」：**潜兵 + SEAF 部队** | 原版只能锁敌人。现在这一档锁的是**友方**：潜兵（用本地玩家的实体类型判定，不需要任何外部哈希表）和 **10 个 SEAF 单位**（SEAF MK1/MK2、背包、无线电 MK1/MK2、医疗兵 MK1/MK2/MK3、机枪次抛 MK1/MK2，哈希取自同一份社区表格）。SEAF 是**友军**，敌人那条路必然拒绝它们（同阵营掩码），所以它们像敌人一样**按资源哈希单独放行**。|
-| 3 | 新增索敌范围圆环（1 像素细线）+ 锁定标记 + 目标方框，三者**各自独立开关** | 原版没有任何锁定视觉反馈 |
-| 4 | 索敌锥改为从**手上武器**出发 | 原版用 `held[1]`（通常是**背在背上的主武器**），手持支援武器时瞄准锥从背后开始，锁不到目标 |
-| 5 | F7 从「关闭」改为「重启」 | 偶发的锁不上状态，现在一键复位 |
-| 6 | **索敌锥改用相机轴**（与圆环共用同一根轴） | 原版索敌用枪口轴、圆环画在相机轴上，第三人称下两轴差约 5°，**比小角度下的整个锥还宽**——导致圈外敌人被锁（实测 995 样本中 64% 落在圈外） |
-| 7 | **兜底绑定也改用相机轴**（与准星同一根轴） | 第 6 条只改了准星那一侧，**绑定仍然用枪口轴**。`best_for` 按「与轴的夹角」排序，两轴差 5° 就足以让两个挨得近的敌人互换名次——于是**准星标记在 A 身上、弹丸却飞向 B**。现在两边共用同一个轴，不可能再不一致 |
-| 8 | **新增「掩体后不锁」**（默认开启，可关闭） | 引擎自己的锁定**本来就判掩体**——但兜底绑定的触发条件恰恰是"引擎没锁"，也就是"目标在掩体后"这一种情况，于是它**系统性地抵消了引擎的判断**。现在兜底在挑目标时会用**引擎自己的碰撞射线**对每个候选做一次视线检测，掩体后的直接排除 |
-| 9 | **手上不是制导武器时不再画锁定 UI** | 原版只要身上带着一把清单里的枪就一直画圈、画标记；把制导弹背在背上、手上换成别的东西也照画不误。现在按**运行时报告的「手上这东西」**判断：**不在制导清单里**就整个收掉锁定框、范围环、锁定标记。判据是清单本身，不是武器类别——**只要写在制导清单里就照画**，不在清单里的（战略配备球之类）才收掉 |
-
-第 9 条只影响**画面**：索敌与绑定逻辑一字未改，手上拿着制导武器时的表现与之前完全一致。
-
-| # | 内容 | 原因 |
-| --- | --- | --- |
-| 10 | **修复 MODS 页选项被挤掉** | 菜单一页最多 32 项。本 mod 一路加功能，把**末尾三项挤出了页面**——日志里是 `apw_require_assets refused - mod already has 32 options`。其中「加载弹丸材质」一旦不在页面上就**没法从游戏里打开**，弹丸会带着缺失材质出现（**一堆问号**）。现在把三个开发者/排查开关（`ship_scan` / `debug` / `los_debug`）从菜单里撤下、只留在 cfg 里，页面正好 32 项，**所有选项都在，也没有新增分类**（分类按钮一共只有 8 个，多一个会挤掉别人） |
-| 15 | **补齐光能族清单：电塔/干扰器是「两个实体」** | 第 1 条补的 `Illuminate Tesla Tower` 与 `Illuminate Scrambler Battery` **确实在表里**，但那份表格里它们是**成对出现**的：电塔还有 `Lightning Spire`（电塔的**电弧发射器**）、干扰器还有 `Illuminate Scrambler`（**干扰器本体**）——这两个**没在表里**，所以「子弹真正打到的那个部件」进不了候选。这次**只补这一对**（2 条）；巨石/传送门/营地传送门/穿梭舰/无人机之类的场景与目标物**一律不加**，`(Model)`、`(Vista)`、`(No Package)`、废案也不加 |
-| 16 | **骨骼读不到的单位不再凭空消失** | 三个「无票者」资源**本来就在表里**，所以个别锁不上的那些是**在后面的关卡被筛掉**。最大嫌疑是**姿态骨骼**：扫描对每个单位只读一根骨骼，读不到就整个丢弃——而**被打断腿的无票者是另一套骨骼布局**。现在读不到时**退回根骨骼**，不再把站在你面前的单位当不存在 |
-| 19 | **第四个模式：最大血量小优先** | 原来每把枪是 `OFF / 准心优先 / 血量优先`。实测确认 `血量优先`**本来就是按最大血量从大到小**（评分 `score = score - mx * 1000000`），所以它**只改了显示名**（→ **最大血量大优先**）；另外**新增** `最大血量小优先`（同一项符号取反：`+ mx * 1000000`）。两个血量档各对应一条 cfg 列表：`prio_targets=`（大）与 `prio_small=`（小），**已有 cfg 的含义一字不变** |
-| 18 | **（已停用）只锁友军 / SEAF 锁定** | 这一条**不再打进本 mod**：SEAF 与友军锁定、满血规则现在归 **homing stim** mod 管，两边同时开会抢同一个目标。代码 `p18_seaf` 保留在管线里备查，但**不在 PATCHES 里**——重建不会再把它带回来 |
-| 17 | **新增 `debug=1` 的索敌观测日志** | 「有些单位锁不上」不该靠猜：打开 `debug=1` 后每 2 秒写一行 `WATCH 名称 seen/wanted/health/faction/pose/usable`，把它卡在哪一道关卡直接读出来 |
-| 14 | **投影偏移自校准**（"三角形位置时好时坏"的真正原因） | 标记是**投影**出来的，而范围环是**画在屏幕正中**的。实测发现：投影有时会整体偏出屏幕坐标系（某次会话里相机轴落在中心**右侧 130 px、上方 154 px**），于是标记整体跟着偏、环却还是准的——这就是"有时好有时坏"。现在每帧量一次**相机轴的投影误差**并从所有投影点里扣掉（正常情况下误差是 0，等于什么都没做；超过四分之一屏的荒谬值直接忽略）。诊断行仍打印**原始**值，方便核对 |
-| 13 | **锁定标记跟得上目标了** | 目标位置是**每 20 帧（三分之一秒）扫一次**时记下来的，标记和世界方框一直用它，而范围环是每帧按相机重画的——所以敌人走着走着你就会看到**标记落在它身后**、和环对不上（这跟用哪种索敌顺序无关，切回准心优先当然也不会好）。现在**每帧重读被锁目标的那个骨骼**，位置实时更新（子弹瞄准用的也是这个位置） |
-| 12 | **菜单减重：近战/投掷物/非玩家行退出菜单** | MODS 页每个分类 32 行、页签只有 8 个分类位。我们占了 6 个（控制页 + 5 个武器页），把别的 mod 的分类挤掉了。撤下 **37 行**（10 把近战 + 26 种手雷/投掷物 + 1 个开发者物理枪）后是 `ceil(136/32)=5` 个分类，别人回来了。**只是不列出，能力一点没少**：这些武器写进 cfg 的 `weapons=` 行照样制导，已启用的更不会被动 |
-| 11 | **视线检测改从枪口发出**（原来是相机） | 第 6 条把索敌锥移到了相机轴上，**视线检测跟着一起用了相机起点**——但第三人称下相机在枪口**后方好几米、还更高**，挡子弹的灌木/石头**根本不在相机那条射线上**。实测 94 条射线里 **36 条**存在「枪口打得着、相机看不见」的命中，这就是"植被挡子弹却照样锁定"。现在索敌锥与排序仍在相机轴（保证圈和标记对得上），**只有视线检测改从手上的枪口发出**——子弹从哪儿出发，就从哪儿判有没有东西挡着 |
-
-另外修复了两个稳定性问题：圆环与标记**拆成两个独立 GUI**（原本共用，开镜时 FOV 变化会每帧重建整个 GUI，标记被反复销毁→看起来消失）；锁定状态加 **0.3 秒去抖**，避免瞄准锥偏紧时每帧触发重建。
-
-## v1.8.1：代码健壮性与可读性
-
-| # | 内容 | 原因 |
-| --- | --- | --- |
-| 20 | **修掉三处会报错的隐患**（F10 换追踪弹、`debug=1` 索敌日志、准心轴比较） | 都是"某个分支一旦走到就抛 Lua 错误"的写法：`set_seek()` 里调用的 `set_lease` / `sync_leases` 声明在它后面（Lua 的 local 只从声明处可见，读到的是 nil）；`refresh_targets()` 在 `entity()` 返回 nil 时仍然索引 `e.resource`；`update_aim_pose()` 会拿 nil 去比大小。详见 [`OPTIMIZATION.md`](OPTIMIZATION.md) |
-| 21 | **指针判断收敛成一个 `ptr_ok()`**，并给所有写内存的入口补上 | 原先 10 处各写一遍 `>= 65536 and < 0x800000000000`；现在不可能成为地址的值连 `VirtualProtect` 都不会调用 |
-| 22 | **`num_or()`：cfg 里的 `inf` / `NaN` 回落到出厂默认** | cfg 是手改文件，`1e400` 这类值会让 `target_interval` 变成 `inf`，于是敌人列表**再也不刷新**（`scan_age >= inf` 永远为假） |
-| 23 | **245 个资源哈希（`TARGETS` / `WATCH` / `CLUSTER.units` / 命名常量）统一成 `hash8('0x…')`** | 与 cfg 的 `weapons=` 行、`SEEK_LIST`、社区哈希表用同一种写法；表里的 `0x8053DA4358971392` 之类现在可以直接搜到。转换是脚本做的，每个条目都做了字节级往返校验 |
-| 25 | **修掉绿色目标方框在切换武器后残留** | 世界方框是一个 world-space line object。原来丢弃它时只调 `World.destroy_line_object`，而且**无论成功与否都把句柄置空**——这个调用一旦没有真的把对象从画面里拿掉（或者那一刻 `main_world()` 是 nil），方框就永远留在屏幕上，而且**再也没有任何代码能碰到它**（这正好解释了"目标离开锁定范围时会正常消失，但锁着的时候切武器就一直在"：前者走的是另一条路径——`reset` + 一条全透明线 + `dispatch`，那条一直是好的）。现在丢弃时**先用这条可靠的路径把方框画成不可见**，再尝试交还给引擎，并且只在真正交还成功（或方框确认已不可见）时才放掉句柄 |
-| 27 | **开镜与腰射的锁定范围（v1.8.3 / v1.8.4）** | 锁定锥原本是**世界角度固定**的，而范围圆环是这个锥在屏幕上的投影——所以环会随倍率放大：你的日志里 60° FOV 时半径 264 px，8° 高倍镜时 1816 px（屏幕半高只有 720），环整圈跑出屏幕、屏幕上几乎什么都锁得上。默认按**当前相机 FOV 做补偿**，圆环在任意倍率下保持同样的像素半径，腰射与开镜"屏幕上能锁的范围"完全一致；`scope_fix=1` 时改为**原版圆环 × `scope_scale`**（默认 0.3），于是环随倍镜等比放大、倍镜越大锁得越远，而系数由你在 MODS 页控制。两种模型共用同一个 `ctx.cone_tan`，所以"画出来的环"和"真正锁的范围"不可能不一致 |
-| 28 | **两个开镜选项（v1.8.3 / v1.8.4）** | 「开镜锁定系数 SCOPE LOCK SCALE」（0.05–1，默认 0.3）与「开镜锁定范围跟随倍镜 FOLLOW THE SCOPE ZOOM」（默认**关**）。为守住 GUIDED ROUNDS 页 32 行的硬上限，`los_desc` 与 `scan_ms` 两行改为 cfg-only（功能不变） |
-| 26 | **目标过期就不再画方框** | 新增 `ctx.target_at` 帧戳：`step()` 每帧重新选目标时刷新它。方框只有在帧戳足够新（60 帧内）时才绘制，于是"addon 已经不再跟踪、方框却留在原地"这种情况不会再发生 |
-| 24 | 命名常量与消除同名遮蔽 | `SET_ROW_MAX` / `LOG_MAX_LINES` / `PUB_MAX` / `CLUSTER.max_unit`；准心 UI 的 `R` 改成 `UI`（`R` 是全文的引擎偏移表），`quad` 的 `state` 参数改成 `lock_state`，LOS 内部的 `finite` 改成 `in_bounds` |
-
-## 构建
-
-源码在 `docs/guided_rounds.lua`，构建脚本是 `build.py`（只依赖 Python 3，不需要游戏或 SDK）：
-
-```powershell
-python build.py
-```
-
-它会重新生成 `Addon/9ba626afa44a3aa3.patch_0` 和安装包 `Guided-Rounds-v1.8.5.zip`。
-归档格式与 Bingus Shared Loader 官方 `scripts/archive.py` + `build_addon.py` 的输出**逐字节一致**，
-可以加 `--check-against <BingusSharedLoader 源码目录>` 现场对拍。
-
-改完源码后建议再跑一遍离线自检（用的是游戏自带的 `bin/lua51.dll`，不需要启动游戏）：
-
-```powershell
-python tools\guardglobals.py docs\guided_rounds.lua            # 有没有"声明前就被引用"的 local
-python tools\loadtest.py docs\guided_rounds.lua --probe-menu --probe-seek --probe-shutdown
-```
-
-第二条会把整段 Lua 真正加载并执行，打印 MODS 菜单的行数与分类，并调用 F10 与 shutdown 路径。
-期望输出：
+**配置文件**（`ship_scan` / `debug` / `los_debug` / `los_desc` / `scan_ms` 这几个开发者/排查开关只写在 cfg 里，不占菜单行）
 
 ```
-status: OK
-result: menu rows=136 categories: GUIDED ROUNDS=32 GUIDED WEAPONS 1=32 GUIDED WEAPONS 2=32 GUIDED WEAPONS 3=32 GUIDED WEAPONS 4=8 | seek ok | shutdown ok
+%LOCALAPPDATA%\Hd2ApwGuidance\apw_guidance.cfg
 ```
 
-## 日志
+**语言**：菜单选项文字自动跟随游戏语言——简体/繁体中文显示中文，其它语言显示英文；改了 Text Language 之后重开一次逃生菜单即可生效。
 
-参数改动、锁定目标、制导状态都写在：
+### 亮点
 
-```
-%LOCALAPPDATA%\Hd2ApwGuidance\ApwGuidance.log
-```
+- 把 P-92 法令的原版制导机制移植到 **104** 把枪与支援武器，弹丸出膛后自动追踪敌人
+- **伤害、初速、弹道仍然使用武器自己的数值**，不会统一变成法令手枪的数据
+- 索敌范围圆环（1 像素细线）+ 原版锁定标记 + 目标方框，三者各自独立开关；**圆环画多大就锁多大**
+- **掩体后不锁**：视线检测用引擎自己的碰撞射线，而且从**手上的枪口**发出（不是相机），判的就是子弹这条路
+- 每把枪可选四种模式：**OFF / 准心优先 / 最大血量大优先 / 最大血量小优先**
+- **开镜与腰射的锁定范围不再打架**：默认屏幕一致；想要「开镜锁得更远」可打开「跟随倍镜」，并按系数自适应
+- **F7 一键重启**，清掉偶发的锁不上状态
+- **（v1.8.5 新增）菜单选项文字跟随游戏语言**自动切换中/英
+- RL-77 空爆火箭：可让携带集束的那枚火箭本体制导（出厂 `flak_only=1`，集束模式保持原厂行为，只制导高射弹）
+- 菜单遵守 MODS 页的硬上限（每分类 32 行、页签最多 8 个分类），**不会挤掉别的 mod 的分类**
 
-## 卸载
+### 已知问题
 
-关闭 mod 后所有内存写入都会还原；直接删除包即可。
+- **刚进入战局时会有一小段卡顿——这是正常现象，将来也不会修复。**
+  mod 必须先在本机内存里找到游戏的数据表才能工作，这一小段卡顿就是那次查找。它是**一次性**的：数据表找到之后
+  就不再扫描，之后的战斗不受影响。想减轻可以把 cfg 里的 `scan_ms` 调小（出厂 4 毫秒/帧；调小则卡顿更轻，
+  代价是找到数据表更慢）。
+- **作为主机时，没装本 mod 的队友会看到粉色问号弹丸。**
+  本 mod 会把弹丸换成 P-92 法令的**弹丸实体**（追踪组件在那个实体里），而资源包是**按机器加载**的：只有装 mod 的机器申请过这个包，
+  别人的游戏里这个实体解析不出来，于是渲染成缺材质的问号。这是引擎的资源加载机制，**主机侧无法绕开**。
+- **作为客机加入别人的战局时，通常不会出现这个问题**：你自己那台机器加载了自己需要的包，射击效果对你完全正常，
+  队友也不需要装任何东西。所以**推荐以客机身份加入其他队伍**。
+- 想让队友也看到正常模型：让队友把 HD2Runtime 升到 **0.31 以上**（新版运行时会自动加载队友 mod 需要的材质，队友不需要装本 mod）；
+  或者让队里任意一人把 **P-92 法令**当副武器带着（该资源包会被全队加载）。
+- **激光、电弧、火焰、喷射类等非弹丸武器无法使用，且未来也不会支持。** 例如 LAS-98 激光大炮、ARC-3 电弧发射器、
+  FLAM-40 火焰喷射器、TX-41 灭菌器等：它们**没有可追踪的弹丸**，本 mod 的制导机制对它们无效。
+- 近战武器、手雷/投掷物，以及非玩家武器的行不列在菜单里（受 MODS 页 32 行/分类限制）；把这些武器写进 cfg 的
+  `weapons=` 行仍可制导。
+- 与其它修改同一批武器/弹丸字段的 mod 可能冲突。
 
-## 目录
+### 多人游戏建议
+
+- **推荐以客机身份加入别人的战局。** 你的制导效果只由你自己的机器计算，队友不会看到问号弹丸，你也不需要队友装任何东西。
+- 如果你是主机：请提前告知队友可能看到问号弹丸，并按上面「已知问题」里的办法缓解。
+- 建议使用 Friends Only / 邀请制房间。
+
+### 源码与构建
+
+mod 源码是单个 Lua 文件：`docs/guided_rounds.lua`（构建脚本的唯一输入），另外还有：
 
 ```
 Guided-Rounds-v1.8.5/
-  manifest.json            管理器清单（GUID 与 v1.8.0 相同，视为升级）
-  build.py                 重新打包（写 Addon/ 与 ../Guided-Rounds-v1.8.5.zip）
-  Addon/                   部署目录：9ba626afa44a3aa3.patch_0 (+ .stream / .gpu_resources)
-  docs/
-    guided_rounds.lua      mod 源码（构建脚本的唯一输入）
-    README.md              本文件
-    OPTIMIZATION.md        v1.8.1 改动清单与验证方法
-  tools/                    本次优化用的检查脚本（不进安装包）
+├─ manifest.json            管理器清单（GUID、名称、Include）
+├─ build.py                 打包脚本：重建 Addon/ 与安装包 zip
+├─ Addon/                   部署目录：9ba626afa44a3aa3.patch_0 (+ .stream / .gpu_resources)
+├─ docs/
+│  ├─ guided_rounds.lua     mod 源码
+│  ├─ README.md             随包说明书
+│  └─ OPTIMIZATION.md       各版本改动与验证记录
+└─ tools/                   离线自检脚本（不进安装包）
 ```
 
-## 致谢
+构建（只需要 Python 3，不需要游戏或 SDK）：
 
-制导机制、内存偏移与大部分实现来自社区原有的 APW-1 制导弹 addon，本包在其基础上
-做了独立开发与修复。制导组件与场景资源的版权属于 Arrowhead Game Studios。
+```powershell
+cd Guided-Rounds-v1.8.5
+python build.py                                  # 写 Addon/ 与 Guided-Rounds-v1.8.5.zip
+python build.py --check-against ..\BingusSharedLoader-source-v19   # 与官方构建器逐字节对拍
+```
+
+归档写入器的输出与 Bingus Shared Loader 官方 `scripts/archive.py` + `build_addon.py` **逐字节一致**。
+
+`tools/` 里的自检脚本（改完源码建议跑一遍）：
+
+| 脚本 | 作用 |
+| --- | --- |
+| `guardglobals.py` | 抓「在自己被声明之前就被引用」的 local——这类名字会被编译成全局读取，永远是 nil |
+| `loadtest.py` | **用游戏自带的 `bin/lua51.dll` 真正加载并执行这份 Lua**：`--probe-menu`（数 MODS 菜单行数）、`--probe-seek`（F10）、`--probe-scope`（开镜/腰射圆环）、`--probe-render`（目标方框）、`--probe-language`（语言自适应）、`--probe-shutdown`（还原路径） |
+| `check_package.py` | 只用标准库解析构建出来的 zip：清单结构、归档头、资源哈希，并把 Lua 从归档里解回来与 `docs/` 逐字节比对 |
+| `hunks.py` / `verify.py` / `numcheck.py` / `names.py` | 与旧版本做 token 级差异、数值/标识符清单对比，确认改动没有意外波及内存偏移与常量 |
+
+### 开源许可
+
+本仓库以 **MIT 许可证**开源，见 [LICENSE](LICENSE)。你可以自由使用、修改、再分发，只需保留版权与许可声明。
+
+源码仓库：<https://github.com/cancan23333/Helldiver2-Guided-Rounds-v1.8.5>
+
+欢迎在 Issues 里报告问题（附上 `%LOCALAPPDATA%\Hd2ApwGuidance\ApwGuidance.log` 与
+`%LOCALAPPDATA%\CowboyBingus\Helldivers2\Logs\BingusSharedLoader.log` 更有效），也欢迎 Pull Request。
+
+本仓库不含游戏本体资源；制导组件与场景资源的版权属于 Arrowhead Game Studios。
+
+### 致谢
+
+本包是 [DIY your weapon to shoot like Donk（APW-1 反器材锁头 DIY-able）](https://ayakamods.com/mods/diy-your-weapon-to-shoot-like-donk-apw-1-%E5%8F%8D%E5%99%A8%E6%9D%90%E9%94%81%E5%A4%B4mod-diy-able.4226/)
+的二次修改产物：制导机制、内存偏移与大部分实现来自那个 addon。也感谢 Bingus Shared Loader、HD2Runtime、
+Mod Options Menu / Vanilla Plus Megapack 的作者们。作者：cancan2333 & SoS2430。
+
+---
+
+<a id="english"></a>
+
+## English
+
+A Helldivers 2 addon for Bingus Shared Loader: the **P-92 Warrant's own guidance**, ported to every weapon on the list.
+Rounds track the enemy after they leave the barrel, while **damage, muzzle velocity and ballistics stay the weapon's
+own** (they do not become the Warrant's 90 damage). It adds an aim-cone range ring, a lock marker and a target box, all
+tunable live from the in-game **MODS** tab.
+
+> ### ★ NEW IN v1.8.5 — FULL ENGLISH SUPPORT ★
+> Every in-game option now follows your game language: Simplified or Traditional Chinese shows Chinese, **every other
+> language shows English** — a fully English menu for the first time (earlier versions were Chinese-only). Nothing to
+> configure: change Text Language in the game's options and open the escape menu again.
+
+### Derivation notice (built on someone else's work)
+
+This project is a **modified derivative** of
+[DIY your weapon to shoot like Donk (APW-1 Anti-Materiel lock-on, DIY-able)](https://ayakamods.com/mods/diy-your-weapon-to-shoot-like-donk-apw-1-%E5%8F%8D%E5%99%A8%E6%9D%90%E9%94%81%E5%A4%B4mod-diy-able.4226/):
+the guidance mechanism, the memory offsets and most of the implementation come from that addon. If you prefer the
+original approach, use that mod instead — both edit the same weapon fields, so **do not enable the two together**.
+
+### Requirements
+
+Required:
+
+- [Bingus Shared Loader](https://ayakamods.com/mods/bingus-shared-loader.3861/) — v18+ / API 1
+- [HD2Runtime](https://ayakamods.com/mods/hd2runtime.4260/) — v0.40.0+
+
+Highly recommended:
+
+- [WeakPoint Lock-On v2](https://ayakamods.com/mods/weakpoint-lock-on-v2.3981/) — v3.0
+- [Vanilla Plus Megapack](https://ayakamods.com/mods/vanilla-plus-megapack.3913/) — provides the in-game MODS tab; without it only the cfg file can change settings
+
+Without HD2Runtime the projectile materials are never loaded and rounds show as missing-material question marks.
+
+### Installation
+
+1. Import `Guided-Rounds-v1.8.5.zip` with your mod manager (or run `python build.py` here to build it yourself)
+2. Enable this mod and the requirements above
+3. Purge & redeploy
+4. Restart the game
+
+⚠️ If the original "DIY-able / APW-1 Anti-Materiel lock-on" addon is installed, remove it first — both edit the same
+weapon fields and conflict when enabled together.
+
+### How to use
+
+The escape menu's **MODS** tab carries two categories:
+
+- **GUIDED ROUNDS** — master switch and every parameter (exactly 32 rows)
+- **GUIDED WEAPONS 1..4** — **104** weapons and support weapons, one four-way choice each:
+  - **OFF**: plain rounds
+  - **AIM FIRST**: guided, locks the enemy nearest the crosshair
+  - **BIG FIRST**: guided, locks the enemy with the most maximum health
+  - **SMALL FIRST**: guided, locks the enemy with the least maximum health
+
+  Both health tiers order by **maximum** health, so the choice does not drift as a target is damaged; inside one tier the crosshair still decides.
+
+**Common settings**
+
+| Setting | Meaning |
+| --- | --- |
+| ENABLE | Master switch. Turning it off restores every byte it wrote |
+| LOCK ANGLE | Acquisition cone half angle, and **it also sets the on-screen radius of the range ring**; 0 removes the ring |
+| LOCK RANGE | Furthest target accepted, in metres (250 shipped) |
+| GUIDED ROUND SPEED / SEEKER ACCELERATION | Written straight into the seeker component. The game value is only 90 m/s, which is why guided rounds look slow; try 600–900 first |
+| ARM TIME AFTER MUZZLE | How long after leaving the barrel a round may be given a target (0.25 s shipped) |
+| BIND TARGET OURSELVES | When the engine has not locked anything, pick one in the aim cone and bind it. **Leave this on** |
+| REQUIRES LINE OF SIGHT | On by default. Uses the engine's own collision ray, cast **from the muzzle in your hands** — the bullet's own path is tested |
+| SHOOT THROUGH FOLIAGE | On by default. Leaves block the view but not the bullet, so the engine's foliage hits are skipped |
+| RANGE RING / LOCK MARKERS / TARGET BOX | The three lock visuals, each with its own switch |
+| LOAD PROJECTILE MATERIALS | **Keep this ON.** With it off, rounds show as missing-material question marks |
+| SCOPE LOCK SCALE / FOLLOW THE SCOPE ZOOM | Off by default. Off: the ring keeps the same on-screen size at every zoom. On: the scoped range is the original range × the scale, so it follows the magnification |
+
+**Hotkeys**
+
+| Key | Action |
+| --- | --- |
+| **F7** | Restarts the mod: every value it wrote is restored, then taken again. It does **not** switch the mod off |
+| **F10** | Cycles the seeker entity (set `seek_cycle=1` in the cfg first) |
+
+**Config file** (the developer/troubleshooting switches live here only, so they cost no menu row:
+`ship_scan` / `debug` / `los_debug` / `los_desc` / `scan_ms`)
+
+```
+%LOCALAPPDATA%\Hd2ApwGuidance\apw_guidance.cfg
+```
+
+**Language**: option texts follow the game language — Simplified/Traditional Chinese shows Chinese, every other
+language shows English. After changing Text Language in the game, open the escape menu again.
+
+### Highlights
+
+- The P-92 Warrant's own guidance, ported to **104** weapons and support weapons
+- **Damage, muzzle velocity and ballistics stay the weapon's own** — nothing is normalised to the Warrant's numbers
+- Range ring (one-pixel hairline), stock lock markers and a target box, each with its own switch; **what the ring shows is what is locked**
+- **Cover is respected**: the sight test casts the engine's own collision ray **from the muzzle in your hands**, so it judges the bullet's actual path
+- Four modes per weapon: **OFF / AIM FIRST / BIG FIRST / SMALL FIRST**
+- **Hipfire and scope no longer disagree**; switch on FOLLOW THE SCOPE ZOOM to lock further the more you zoom
+- **F7 restarts in one keypress** instead of toggling the mod off and on
+- **(new in v1.8.5) option texts follow the game language** (Chinese / English)
+- RL-77 Airburst: the rocket that carries the burst can be guided (`flak_only=1` shipped, so the cluster mode stays factory)
+- The menu respects the MODS tab's hard limits, so it **never pushes another mod's category out**
+
+### Known issues
+
+- **A short stutter when a mission starts — this is normal and will not be fixed.** The mod has to locate the game's
+  data tables in this machine's memory before it can do anything, and that search is the stutter. It is a **one-off**
+  cost: once the tables are found nothing is scanned again. To soften it, lower `scan_ms` in the cfg (4 ms per frame
+  shipped: less stutter, but the tables are found later).
+- **As the host, squadmates who do not have this mod see pink question-mark rounds.** The mod swaps a weapon's round for
+  the P-92 Warrant **projectile entity** (that is where the seeker lives), and resource packages are loaded **per
+  machine**: only a machine that asked for the package has it. This is the engine's asset loading and **cannot be worked
+  around from the host side**.
+- **Joining someone else's game as a client does not normally show this** — your own machine loads what it needs, and the
+  host needs nothing installed. That is why **joining other squads as a client is the recommended way to play**.
+- To make squadmates see the correct model: have them update HD2Runtime to **0.31 or newer** (a current runtime loads
+  what a lobby peer's mods need by itself), or have anyone in the squad carry the **P-92 Warrant** as their sidearm.
+- **Non-projectile weapons cannot be guided and will never be supported.** LAS-98 Laser Cannon, ARC-3 Arc Thrower,
+  FLAM-40 Flame Thrower, TX-41 Sterilizer and other beam/arc/flame/spray weapons fire **no projectile to steer**.
+- Melee weapons, grenades/throwables and non-player weapon rows are not listed in the menu (32 rows per category);
+  writing them into the cfg's `weapons=` line still guides them.
+- May conflict with other mods that edit the same weapon or projectile fields.
+
+### Multiplayer advice
+
+- **Join other squads as a client.** Your guidance is computed on your own machine, squadmates never see question-mark
+  rounds, and nobody needs anything installed for you.
+- If you are the host: tell your squadmates they may see question-mark rounds, and use the mitigations above.
+- Friends Only / invite-only lobbies are recommended.
+
+### Source and build
+
+The addon is a single Lua file, `docs/guided_rounds.lua` (the only input the build script needs):
+
+```
+Guided-Rounds-v1.8.5/
+├─ manifest.json            mod manager manifest (GUID, name, Include)
+├─ build.py                 packaging: rewrites Addon/ and the release zip
+├─ Addon/                   deployment folder: 9ba626afa44a3aa3.patch_0 (+ sidecars)
+├─ docs/
+│  ├─ guided_rounds.lua     the addon source
+│  ├─ README.md             the README shipped inside the package
+│  └─ OPTIMIZATION.md       per-version change log and verification notes
+└─ tools/                   offline self-check scripts (not packaged)
+```
+
+Build (Python 3 only; no game or SDK needed):
+
+```powershell
+cd Guided-Rounds-v1.8.5
+python build.py                                  # writes Addon/ and Guided-Rounds-v1.8.5.zip
+python build.py --check-against ..\BingusSharedLoader-source-v19   # byte-compare with the official builder
+```
+
+The archive writer produces output **byte-identical** to Bingus Shared Loader's own
+`scripts/archive.py` + `build_addon.py`.
+
+Self-checks in `tools/` (worth running after a change):
+
+| Script | Purpose |
+| --- | --- |
+| `guardglobals.py` | finds a local read before its declaration — such a name compiles to a global read and is nil forever |
+| `loadtest.py` | **loads and runs the addon with the game's own `bin/lua51.dll`**: `--probe-menu` (MENU rows), `--probe-seek` (F10), `--probe-scope` (ring vs zoom), `--probe-render` (target box), `--probe-language` (language adaptation), `--probe-shutdown` (teardown) |
+| `check_package.py` | parses the built zip with the standard library: manifest, archive header, resource hash, and the Lua payload byte-compared with `docs/` |
+| `hunks.py` / `verify.py` / `numcheck.py` / `names.py` | token-level diff against older revisions plus numeric/identifier inventories, to prove no offset or constant moved by accident |
+
+### License
+
+Released under the **MIT license**, see [LICENSE](LICENSE). Use, modify and redistribute freely, keeping the copyright
+and license notice.
+
+Source repository: <https://github.com/cancan23333/Helldiver2-Guided-Rounds-v1.8.5>
+
+Issues and pull requests are welcome — attaching `%LOCALAPPDATA%\Hd2ApwGuidance\ApwGuidance.log` and
+`%LOCALAPPDATA%\CowboyBingus\Helldivers2\Logs\BingusSharedLoader.log` makes a report much easier to act on.
+
+This repository contains no game assets; guidance components and scene assets are copyright Arrowhead Game Studios.
+
+### Credits
+
+This package is a modified derivative of
+[DIY your weapon to shoot like Donk (APW-1 Anti-Materiel lock-on, DIY-able)](https://ayakamods.com/mods/diy-your-weapon-to-shoot-like-donk-apw-1-%E5%8F%8D%E5%99%A8%E6%9D%90%E9%94%81%E5%A4%B4mod-diy-able.4226/);
+the guidance mechanism, the memory offsets and most of the implementation come from that addon. Thanks also to the
+authors of Bingus Shared Loader, HD2Runtime and Mod Options Menu / Vanilla Plus Megapack. Authors: cancan2333 & SoS2430.
