@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 cancan23333
+Copyright (c) 2026 cancan2333 & SoS2430
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Third-party notice / 第三方说明
+
+Guided Rounds is a modified derivative of the community addon
+"DIY your weapon to shoot like Donk (APW-1 Anti-Materiel lock-on, DIY-able)"
+(https://ayakamods.com/mods/diy-your-weapon-to-shoot-like-donk-apw-1-%E5%8F%8D%E5%99%A8%E6%9D%90%E9%94%81%E5%A4%B4mod-diy-able.4226/).
+The guidance mechanism, the memory offsets and most of the implementation come
+from that addon, and its authors are credited here and in the README.
+
+Helldivers 2, its guidance components and its scene assets are copyright
+Arrowhead Game Studios. This repository distributes no game assets.
