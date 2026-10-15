@@ -1,0 +1,16 @@
+{
+  "Version": "1.8.5",
+  "Guid": "adb1ed64-ac71-5476-8acb-9909042fca85",
+  "Name": "Guided Rounds v1.8.5",
+  "Description": "把 P-92 法令手枪的原版制导移植到武器清单里的每一把枪上：弹丸出膛后自动追踪敌人，伤害和初速保持武器原本的数值。带索敌范围圆环、目标锁定标记与方框，全部参数可在游戏内 MODS 菜单实时调整。需要 Bingus Shared Loader v15+ 与 HD2Runtime。v1.8.1 是代码健壮性与可读性优化（玩法与 v1.8.0 一致，另修掉四处会报错的隐患）；v1.8.2 修掉锁定目标方框在切换武器后残留的问题。  |  Guided rounds ported from the P-92 Warrant to every weapon on the list, with an aim-cone range ring, a lock marker and a target box, all tunable from the in-game MODS tab. Requires Bingus Shared Loader v15+ and HD2Runtime. v1.8.1 is a robustness and readability pass (gameplay unchanged from v1.8.0, plus four latent crash fixes); v1.8.2 fixes the lock target box that stayed on screen after a weapon switch.",
+  "Options": [
+    {
+      "Name": "Guided Rounds v1.8.5 - cancan2333 & SoS2430",
+      "Description": "把 P-92 法令手枪的原版制导移植到武器清单里的每一把枪上：弹丸出膛后自动追踪敌人，伤害和初速保持武器原本的数值。带索敌范围圆环、目标锁定标记与方框，全部参数可在游戏内 MODS 菜单实时调整。需要 Bingus Shared Loader v15+ 与 HD2Runtime。v1.8.1 是代码健壮性与可读性优化（玩法与 v1.8.0 一致，另修掉四处会报错的隐患）；v1.8.2 修掉锁定目标方框在切换武器后残留的问题。  |  Guided rounds ported from the P-92 Warrant to every weapon on the list, with an aim-cone range ring, a lock marker and a target box, all tunable from the in-game MODS tab. Requires Bingus Shared Loader v15+ and HD2Runtime. v1.8.1 is a robustness and readability pass (gameplay unchanged from v1.8.0, plus four latent crash fixes); v1.8.2 fixes the lock target box that stayed on screen after a weapon switch.",
+      "Include": [
+        "Addon"
+      ],
+      "Image": ""
+    }
+  ]
+}
