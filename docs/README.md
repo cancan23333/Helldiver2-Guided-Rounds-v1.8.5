@@ -92,6 +92,8 @@ Rounds track the enemy after they leave the barrel, while **damage, muzzle veloc
 | 范围圆环 / 锁定标记 / 目标方框 | 三个锁定视觉元素，各自独立开关 |
 | 加载弹丸材质 | **必须保持开启**。关掉后弹丸会显示成缺失材质的问号图标 |
 | 开镜锁定系数 / 开镜锁定范围跟随倍镜 | 默认关。关闭时圆环在任何倍率下都是同样的屏幕大小，腰射与开镜能锁的范围完全一致；打开后开镜锁定范围 = 原版范围 × 系数，随倍镜放大系数自适应 |
+| 锁定光能族穿梭舰 | 默认**关**。穿梭舰（含护盾）是投送部队的载具，锁它会把弹丸引到舰体上；打开后重新当候选 |
+| 锁定机器人运输舰 | 默认**关**，原因同上 |
 
 **快捷键**
 
@@ -100,7 +102,7 @@ Rounds track the enemy after they leave the barrel, while **damage, muzzle veloc
 | **F7** | 重启本 mod：把所有写过的值还原后重新武装。它**不会关闭** mod，用于清掉偶发「锁不上」的状态 |
 | **F10** | 循环切换追踪弹类型（需要先在 cfg 里把 `seek_cycle` 设为 1） |
 
-**配置文件**（`ship_scan` / `debug` / `los_debug` / `los_desc` / `scan_ms` 这几个开发者/排查开关只写在 cfg 里，不占菜单行）
+**配置文件**（`ship_scan` / `debug` / `los_debug` / `los_desc` / `scan_ms` / `swarm_split` / `cluster_autofix` 这几个开发者/排查开关只写在 cfg 里，不占菜单行）
 
 ```
 %LOCALAPPDATA%\Hd2ApwGuidance\apw_guidance.cfg
@@ -116,6 +118,7 @@ Rounds track the enemy after they leave the barrel, while **damage, muzzle veloc
 - **掩体后不锁**：视线检测用引擎自己的碰撞射线，而且从**手上的枪口**发出（不是相机），判的就是子弹这条路
 - 每把枪可选四种模式：**OFF / 准心优先 / 最大血量大优先 / 最大血量小优先**
 - **开镜与腰射的锁定范围不再打架**：默认屏幕一致；想要「开镜锁得更远」可打开「跟随倍镜」，并按系数自适应
+- **运输舰默认不锁定**（光能族穿梭舰 / 机器人运输舰）：它们是投送部队的载具，菜单里各自有开关，想要可以打开
 - **F7 一键重启**，清掉偶发的锁不上状态
 - **（v1.8.5 新增）菜单选项文字跟随游戏语言**自动切换中/英
 - RL-77 空爆火箭：可让携带集束的那枚火箭本体制导（出厂 `flak_only=1`，集束模式保持原厂行为，只制导高射弹）
@@ -273,6 +276,8 @@ The escape menu's **MODS** tab carries two categories:
 | RANGE RING / LOCK MARKERS / TARGET BOX | The three lock visuals, each with its own switch |
 | LOAD PROJECTILE MATERIALS | **Keep this ON.** With it off, rounds show as missing-material question marks |
 | SCOPE LOCK SCALE / FOLLOW THE SCOPE ZOOM | Off by default. Off: the ring keeps the same on-screen size at every zoom. On: the scoped range is the original range × the scale, so it follows the magnification |
+| LOCK ILLUMINATE WARPSHIPS | **Off** as shipped. The Warp Ship (and its shield) is the transport that drops troops; locking it sends rounds at the ship instead of at what it lands |
+| LOCK AUTOMATON DROPSHIPS | **Off** as shipped, same reason |
 
 **Hotkeys**
 
@@ -282,7 +287,7 @@ The escape menu's **MODS** tab carries two categories:
 | **F10** | Cycles the seeker entity (set `seek_cycle=1` in the cfg first) |
 
 **Config file** (the developer/troubleshooting switches live here only, so they cost no menu row:
-`ship_scan` / `debug` / `los_debug` / `los_desc` / `scan_ms`)
+`ship_scan` / `debug` / `los_debug` / `los_desc` / `scan_ms` / `swarm_split` / `cluster_autofix`)
 
 ```
 %LOCALAPPDATA%\Hd2ApwGuidance\apw_guidance.cfg
@@ -299,6 +304,7 @@ language shows English. After changing Text Language in the game, open the escap
 - **Cover is respected**: the sight test casts the engine's own collision ray **from the muzzle in your hands**, so it judges the bullet's actual path
 - Four modes per weapon: **OFF / AIM FIRST / BIG FIRST / SMALL FIRST**
 - **Hipfire and scope no longer disagree**; switch on FOLLOW THE SCOPE ZOOM to lock further the more you zoom
+- **Transports are not locked by default** (Illuminate Warp Ship / Automaton Dropship); each has its own switch if you want them
 - **F7 restarts in one keypress** instead of toggling the mod off and on
 - **(new in v1.8.5) option texts follow the game language** (Chinese / English)
 - RL-77 Airburst: the rocket that carries the burst can be guided (`flak_only=1` shipped, so the cluster mode stays factory)
